@@ -1,0 +1,49 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b"/>
+      <stop offset="100%" style="stop-color:#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="100" cy="100" r="200" fill="#3b82f6" opacity="0.1"/>
+  <circle cx="1100" cy="530" r="250" fill="#8b5cf6" opacity="0.1"/>
+  
+  <!-- Icon -->
+  <g transform="translate(500, 150)">
+    <!-- Document icon -->
+    <rect x="0" y="0" width="200" height="250" rx="20" fill="#334155" stroke="url(#accentGrad)" stroke-width="4"/>
+    <rect x="30" y="40" width="140" height="12" rx="6" fill="#64748b"/>
+    <rect x="30" y="70" width="100" height="12" rx="6" fill="#64748b"/>
+    <rect x="30" y="100" width="120" height="12" rx="6" fill="#64748b"/>
+    
+    <!-- Magnifying glass -->
+    <circle cx="170" cy="200" r="50" fill="none" stroke="url(#accentGrad)" stroke-width="8"/>
+    <line x1="205" y1="235" x2="240" y2="270" stroke="url(#accentGrad)" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Check mark in magnifying glass -->
+    <path d="M145 200 L160 215 L195 180" fill="none" stroke="#22c55e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Title -->
+  <text x="600" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="#f8fafc">
+    사업자등록번호 추출기
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="530" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#94a3b8">
+    이미지에서 상품번호로 사업자번호 자동 조회
+  </text>
+  
+  <!-- Bottom accent line -->
+  <rect x="400" y="580" width="400" height="6" rx="3" fill="url(#accentGrad)"/>
+</svg>
+

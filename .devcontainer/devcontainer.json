@@ -1,0 +1,42 @@
+{
+  "name": "AI Reader Dev",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  // 컨테이너 생성 후 자동 실행 (Vercel CLI + 프로젝트 의존성 설치)
+  "postCreateCommand": "npm install -g vercel && npm install",
+
+  // Cursor/VS Code 확장 프로그램 자동 설치
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "svelte.svelte-vscode",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "svelte.enable-ts-plugin": true,
+        "eslint.validate": ["javascript", "svelte"]
+      }
+    }
+  },
+
+  // SvelteKit 개발 서버 포트
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "SvelteKit Dev",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  // 컨테이너 내 사용자
+  "remoteUser": "node"
+}

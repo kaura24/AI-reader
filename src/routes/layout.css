@@ -1,0 +1,51 @@
+/* 전역 스타일 리셋 및 기본 설정 */
+*, *::before, *::after {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html {
+	font-size: 16px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	background: linear-gradient(145deg, #0c0c0c 0%, #1a1a2e 50%, #0f0f1a 100%);
+	min-height: 100vh;
+	color: #e4e4e7;
+	line-height: 1.6;
+}
+
+/* 스크롤바 커스텀 */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(99, 102, 241, 0.4);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(99, 102, 241, 0.6);
+}
+
+/* 선택 영역 스타일 */
+::selection {
+	background: rgba(99, 102, 241, 0.3);
+	color: #fff;
+}
+
+/* 포커스 스타일 */
+:focus-visible {
+	outline: 2px solid #818cf8;
+	outline-offset: 2px;
+}
