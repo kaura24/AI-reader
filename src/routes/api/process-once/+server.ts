@@ -105,7 +105,8 @@ export const POST: RequestHandler = async ({ request }) => {
 			} satisfies ErrorResponse, { status: 400 });
 		}
 
-		// 4. 대상 상품번호 추출
+
+		// 4. 대상 상품번호 추출 (콤마로 구분된 다중 코드 지원)
 		const targetCodeRaw = formData.get('productCode');
 		if (!targetCodeRaw || typeof targetCodeRaw !== 'string') {
 			return json({
@@ -116,15 +117,27 @@ export const POST: RequestHandler = async ({ request }) => {
 			} satisfies ErrorResponse, { status: 400 });
 		}
 
-		const productCode = normalizeProductCode(targetCodeRaw);
-		console.log(`[API] Target product code: ${productCode}`);
+		// 공백 제거 및 정규화
+		const productCodes = targetCodeRaw.split(',').map(code => normalizeProductCode(code)).filter(c => c.length > 0);
+		console.log(`[API] Target product codes: ${productCodes.join(', ')}`);
 
-		// 5. 대상 상품번호 형식 검증 (5자리 숫자)
-		if (!validateProductCode(productCode, config.PRODUCT_CODE_REGEX)) {
+		// 5. 대상 상품번호 형식 검증 (5자리 숫자) - 모든 코드가 유효해야 함
+		const invalidCodes = productCodes.filter(code => !validateProductCode(code, config.PRODUCT_CODE_REGEX));
+
+		if (productCodes.length === 0) {
 			return json({
 				ok: false,
 				error_code: 'invalid_product_code',
-				message: `상품번호 형식이 올바르지 않습니다. 5자리 숫자를 입력해주세요. (입력: ${productCode})`,
+				message: '유효한 상품번호가 없습니다.',
+				request_id: requestId
+			} satisfies ErrorResponse, { status: 400 });
+		}
+
+		if (invalidCodes.length > 0) {
+			return json({
+				ok: false,
+				error_code: 'invalid_product_code',
+				message: `상품번호 형식이 올바르지 않습니다. 5자리 숫자를 입력해주세요. (잘못된 입력: ${invalidCodes.join(', ')})`,
 				request_id: requestId
 			} satisfies ErrorResponse, { status: 400 });
 		}
@@ -168,10 +181,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		const imageBase64 = Buffer.from(arrayBuffer).toString('base64');
 		console.log(`[API] Image converted to Base64, length: ${imageBase64.length}`);
 
-		// 10. OpenAI API로 사업자등록번호 추출 (다중 결과)
+		// 10. OpenAI API로 사업자등록번호 추출 (다중 결과 및 다중 타겟 코드)
 		let extractionResult;
 		try {
-			extractionResult = await extractBusinessRegNo(imageBase64, file.type, productCode, config);
+			// 배열 형태의 productCodes를 전달 (기존 함수 시그니처 변경 필요)
+			// 임시로 join해서 넘기고 내부에서 처리하거나, 함수를 수정해야 함.
+			// 여기서는 함수 수정 전이므로, 가장 포괄적인 검색을 위해 첫 번째 코드를 메인으로 사용하지 않고, 
+			// extractBusinessRegNo 함수 자체를 수정하여 string[]을 받도록 변경 예정.
+			// 현재는 string으로 전달하되, 콤마 구분자로 넘김
+			extractionResult = await extractBusinessRegNo(imageBase64, file.type, productCodes.join(','), config);
 			console.log(`[API] Extraction result:`, {
 				total_found: extractionResult.total_found,
 				items: extractionResult.items,
@@ -205,7 +223,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			} satisfies ErrorResponse, { status: 422 });
 		}
 
-		console.log(`[API] Extracted ${extractionResult.total_found} items for product code: ${productCode}`);
+		console.log(`[API] Extracted ${extractionResult.total_found} items for product codes: ${productCodes.join(', ')}`);
 
 		// 12. Excel 생성 (다중 항목)
 		const processedAt = new Date().toISOString();
@@ -236,7 +254,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			console.log('[API] To:', config.RECIPIENT_EMAIL);
 
 			const emailResult = await sendResultEmail(
-				productCode,
+				productCodes.join(','), // 이메일 제목 등에 사용될 대표 코드
 				extractionResult.items,
 				excelBase64,
 				excelFilename,
@@ -277,7 +295,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		const response: SuccessResponse = {
 			ok: true,
-			product_code: productCode,
+			product_code: productCodes.join(','), // 응답에도 콤마로 구분해서 반환
+
 			items: responseItems,
 			total_found: extractionResult.total_found,
 			confidence: extractionResult.confidence,

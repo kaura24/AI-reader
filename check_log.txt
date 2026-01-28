@@ -1,0 +1,79 @@
+Loading svelte-check in workspace: e:\Google Drive\VIBE_class\AI reader
+Getting Svelte diagnostics...
+
+e:\Google Drive\VIBE_class\AI reader\[32msrc\lib\llm\openai.ts[39m:180:6
+[31mError[39m: No overload matches this call.
+  Overload 1 of 3, '(body: ResponseCreateParamsNonStreaming, options?: RequestOptions<unknown> | undefined): APIPromise<Response>', gave the following error.
+    Type '{ role: "user"; content: ({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]; }' is not assignable to type 'string | ResponseInputItem'.
+      Types of property 'content' are incompatible.
+        Type '({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]' is not assignable to type 'string | ResponseInputMessageContentList | undefined'.
+          Type '({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]' is not assignable to type 'ResponseInputMessageContentList'.
+            Type '{ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; }' is not assignable to type 'ResponseInputContent'.
+              Type '{ type: "input_image"; image_url: string; }' is not assignable to type 'ResponseInputContent'.
+                Property 'detail' is missing in type '{ type: "input_image"; image_url: string; }' but required in type 'ResponseInputImage'.
+  Overload 2 of 3, '(body: ResponseCreateParamsStreaming, options?: RequestOptions<unknown> | undefined): APIPromise<Stream<ResponseStreamEvent>>', gave the following error.
+    Type '{ role: "user"; content: ({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]; }' is not assignable to type 'string | ResponseInputItem'.
+      Types of property 'content' are incompatible.
+        Type '({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]' is not assignable to type 'string | ResponseInputMessageContentList | undefined'.
+          Type '({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]' is not assignable to type 'ResponseInputMessageContentList'.
+            Type '{ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; }' is not assignable to type 'ResponseInputContent'.
+              Type '{ type: "input_image"; image_url: string; }' is not assignable to type 'ResponseInputContent'.
+                Property 'detail' is missing in type '{ type: "input_image"; image_url: string; }' but required in type 'ResponseInputImage'.
+  Overload 3 of 3, '(body: ResponseCreateParamsBase, options?: RequestOptions<unknown> | undefined): APIPromise<Response | Stream<ResponseStreamEvent>>', gave the following error.
+    Type '{ role: "user"; content: ({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]; }' is not assignable to type 'string | ResponseInputItem'.
+      Types of property 'content' are incompatible.
+        Type '({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]' is not assignable to type 'string | ResponseInputMessageContentList | undefined'.
+          Type '({ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; })[]' is not assignable to type 'ResponseInputMessageContentList'.
+            Type '{ type: "input_text"; text: string; } | { type: "input_image"; image_url: string; }' is not assignable to type 'ResponseInputContent'.
+              Type '{ type: "input_image"; image_url: string; }' is not assignable to type 'ResponseInputContent'.
+                Property 'detail' is missing in type '{ type: "input_image"; image_url: string; }' but required in type 'ResponseInputImage'. 
+[36m				input: [
+					[35m{
+						role: 'user',
+						content: [
+							{
+								type: 'input_text',
+								text: systemPrompt
+							},
+							{
+								type: 'input_image',
+								image_url: `data:${mimeType};base64,${imageBase64}`
+							}
+						]
+					}[36m
+				],[39m
+
+e:\Google Drive\VIBE_class\AI reader\[32msrc\lib\llm\openai.ts[39m:213:24
+[31mError[39m: Property 'content' does not exist on type 'ResponseOutputItem'.
+  Property 'content' does not exist on type 'ResponseFileSearchToolCall'. 
+[36m				);
+				if (messageOutput?.[35mcontent[36m?.[0]?.text) {
+					outputText = messageOutput.content[0].text;[39m
+
+e:\Google Drive\VIBE_class\AI reader\[32msrc\lib\llm\openai.ts[39m:214:33
+[31mError[39m: Property 'content' does not exist on type 'ResponseOutputItem'.
+  Property 'content' does not exist on type 'ResponseFileSearchToolCall'. 
+[36m				if (messageOutput?.content?.[0]?.text) {
+					outputText = messageOutput.[35mcontent[36m[0].text;
+				}[39m
+
+e:\Google Drive\VIBE_class\AI reader\[32msrc\lib\extract\affiliateCode.ts[39m:145:1
+[31mError[39m: Declaration or statement expected. 
+[36m};
+[35m}[36m[39m
+
+e:\Google Drive\VIBE_class\AI reader\[32msrc\lib\extract\affiliateCode.ts[39m:122:21
+[31mError[39m: Cannot find name 'targetCode'. 
+[36m// Mock 寃곌낵??泥?踰덉㎏ ?寃?肄붾뱶濡??앹꽦?섍굅?? ?⑥닚???붿껌??肄붾뱶瑜?諛섑솚
+const firstTarget = [35mtargetCode[36m.split(',')[0].trim();
+return {[39m
+
+e:\Google Drive\VIBE_class\AI reader\[32msrc\lib\extract\affiliateCode.ts[39m:164:10
+[31mError[39m: Cannot find name 'getMockResult'. 
+[36m		console.log('[Extract] Using MOCK mode');
+		return [35mgetMockResult[36m(targetCode);
+	}[39m
+
+====================================
+[31msvelte-check found 6 errors and 0 warnings in 2 files
+[39m

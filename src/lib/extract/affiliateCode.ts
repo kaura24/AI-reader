@@ -43,48 +43,40 @@ export interface ExtractionError {
  * 대상 상품번호 기반 사업자등록번호 및 업체명 추출 프롬프트 생성
  * 다중 결과를 위한 프롬프트
  */
+
 function createExtractionPrompt(targetCode: string): string {
-	return `당신은 이미지에서 특정 상품번호에 매핑된 사업자등록번호와 업체명을 추출하는 전문가입니다.
+	const targets = targetCode.split(',').map(c => c.trim()).filter(Boolean);
+	const targetCondition = targets.length > 1
+		? `상품번호 리스트 [${targets.join(', ')}] 중 하나라도`
+		: `상품번호 "${targets[0]}"`;
+
+	return `당신은 이미지에서 특정 상품정보에 매핑된 사업자등록번호와 업체명을 추출하는 전문가입니다.
 
 ## 작업
-이미지에서 상품번호 "${targetCode}"가 포함된 **모든 행(row)**을 찾고, 각 행에 있는 사업자등록번호와 업체명을 추출하세요.
+이미지에서 ${targetCondition}가 포함된 **모든 행(row)**을 찾고, 각 행에 있는 사업자등록번호와 업체명을 추출하세요.
 
-## 중요 규칙
-1. 이미지에서 "${targetCode}" 상품번호가 포함된 **모든** 행을 찾으세요.
-2. 동일한 상품번호가 여러 행에 있을 수 있습니다. **모두** 추출하세요.
-3. 각 행에서 사업자등록번호와 업체명(회사명/상호)을 추출하세요.
-4. 사업자등록번호는 "000-00-00000" 형식 (3자리-2자리-5자리) 또는 10자리 숫자입니다.
-5. 업체명은 해당 행에서 회사명, 상호, 업체명 등으로 표시된 텍스트입니다.
-6. 상품번호를 찾을 수 없으면 items를 빈 배열로, total_found를 0으로 설정하세요.
+## 중요 규칙 (엄격 준수)
+1. **대상 찾기**: 이미지 텍스트에서 **${targetCondition}**와 일치하는 숫자를 찾으세요.이 숫자는 "상품번호", "상품코드", "제휴코드", "Product Code", "Code", "NO", "P/N" 등 다양한 레이블과 함께 있거나, 레이블 없이 숫자만 있을 수 있습니다. 
+2. **모든 행 추출**: 동일한 상품번호가 여러 행에 있을 수 있습니다. 조건에 맞는 모든 행을 빠짐없이 추출하세요. 소기업 상품조회 대상(03269, 03275)의 경우 둘 중 하나라도 발견되면 즉시 추출하세요.
+3. **사업자등록번호**: "000-00-00000" (3-2-5자리) 형식 또는 하이픈 없는 10자리 숫자입니다. 사업자번호가 없으면 빈 문자열로 두세요.
+4. **업체명**: 해당 행의 회사명, 상호, 법인명 등을 추출하세요.
+5. **결과 없음**: 해당하는 상품번호를 전혀 찾을 수 없으면 items를 빈 배열로 반환하세요.
 
 ## 응답 형식
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트나 설명은 절대 포함하지 마세요:
+반드시 아래 JSON 형식으로만 응답하세요:
 {
   "items": [
     {
-      "product_code": "${targetCode}",
-      "business_reg_no": "추출된 사업자등록번호 (000-00-00000 형식)",
-      "company_name": "추출된 업체명/회사명",
+      "product_code": "찾은 상품번호 (예: ${targets[0]})",
+      "business_reg_no": "000-00-00000",
+      "company_name": "업체명",
       "row_index": 1,
-      "raw_text": "해당 행에서 읽은 원본 텍스트 (선택사항)"
-    },
-    {
-      "product_code": "${targetCode}",
-      "business_reg_no": "두 번째 사업자등록번호",
-      "company_name": "두 번째 업체명",
-      "row_index": 2,
-      "raw_text": "해당 행에서 읽은 원본 텍스트 (선택사항)"
+      "raw_text": "해당 행의 원본 텍스트 전체"
     }
   ],
-  "total_found": 2,
-  "confidence": 0.0에서 1.0 사이의 신뢰도 (숫자),
-  "raw_text": "전체 관련 텍스트 (선택사항)"
-}
-
-## 예시
-- 상품번호 "${targetCode}"가 3개 행에 있으면: items 배열에 3개 객체 포함
-- 상품번호 "${targetCode}"가 1개 행에 있으면: items 배열에 1개 객체 포함
-- 상품번호 "${targetCode}"를 찾을 수 없으면: items: [], total_found: 0, confidence: 0`;
+  "total_found": 1,
+  "confidence": 0.0~1.0
+}`;
 }
 
 /**
@@ -110,12 +102,12 @@ export function validateProductCode(code: string, regex: RegExp): boolean {
 export function normalizeBusinessRegNo(businessRegNo: string): string {
 	// 숫자만 추출
 	const digits = businessRegNo.replace(/\D/g, '');
-	
+
 	// 10자리인 경우 000-00-00000 형식으로 변환
 	if (digits.length === 10) {
 		return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
 	}
-	
+
 	// 이미 형식이 맞거나 다른 경우 그대로 반환
 	return businessRegNo.trim();
 }
@@ -123,22 +115,25 @@ export function normalizeBusinessRegNo(businessRegNo: string): string {
 /**
  * Mock 추출 결과 생성 (테스트용) - 다중 결과
  */
+/* Mock 추출 결과 생성 (테스트용) - 다중 결과 */
 function getMockResult(targetCode: string): ExtractionResult {
+	// Mock 결과는 첫 번째 타겟 코드로 생성하거나, 단순히 요청된 코드를 반환
+	const firstTarget = targetCode.split(',')[0].trim();
 	return {
 		items: [
 			{
-				product_code: targetCode,
+				product_code: firstTarget,
 				business_reg_no: '123-45-67890',
 				company_name: '테스트업체A',
 				row_index: 1,
-				raw_text: `[MOCK] 행1: 상품번호 ${targetCode}, 사업자등록번호 123-45-67890, 업체명 테스트업체A`
+				raw_text: `[MOCK] 행1: 상품번호 ${firstTarget}, 사업자등록번호 123-45-67890, 업체명 테스트업체A`
 			},
 			{
-				product_code: targetCode,
+				product_code: firstTarget,
 				business_reg_no: '987-65-43210',
 				company_name: '테스트업체B',
 				row_index: 2,
-				raw_text: `[MOCK] 행2: 상품번호 ${targetCode}, 사업자등록번호 987-65-43210, 업체명 테스트업체B`
+				raw_text: `[MOCK] 행2: 상품번호 ${firstTarget}, 사업자등록번호 987-65-43210, 업체명 테스트업체B`
 			}
 		],
 		total_found: 2,

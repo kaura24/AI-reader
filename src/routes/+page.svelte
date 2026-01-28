@@ -1,15 +1,25 @@
 <script lang="ts">
-	import { shrinkImage, shrinkImageFromBuffer, formatBytes, needsShrink, isSupportedImageType, getLoadLogs, clearLoadLogs, type ShrinkResult, type ImageLoadLog } from '$lib/client/imageShrink';
-	import { onMount } from 'svelte';
+	import {
+		shrinkImage,
+		shrinkImageFromBuffer,
+		formatBytes,
+		needsShrink,
+		isSupportedImageType,
+		getLoadLogs,
+		clearLoadLogs,
+		type ShrinkResult,
+		type ImageLoadLog,
+	} from "$lib/client/imageShrink";
+	import { onMount } from "svelte";
 
 	// 상태
 	let selectedFile: File | null = null;
 	let shrinkResult: ShrinkResult | null = null;
-	let productCode = '';  // 대상 상품번호
+	let productCode = ""; // 대상 상품번호
 	let isProcessing = false;
 	let isDragging = false;
-	let errorMessage = '';
-	
+	let errorMessage = "";
+
 	// 이미지 로딩 디버그 로그
 	let imageLoadLogs: ImageLoadLog[] = [];
 
@@ -26,9 +36,9 @@
 
 	let successResult: {
 		product_code: string;
-		items: ResultItem[];           // 다중 결과
-		total_found: number;           // 찾은 총 개수
-		confidence: number;            // 신뢰도
+		items: ResultItem[]; // 다중 결과
+		total_found: number; // 찾은 총 개수
+		confidence: number; // 신뢰도
 		emailed: boolean;
 		email_debug?: {
 			attempted: boolean;
@@ -51,13 +61,13 @@
 	let showDebugPanel = false;
 
 	// AI 연결 상태 (헤더 표시용)
-	let aiStatus: 'checking' | 'connected' | 'disconnected' = 'checking';
-	let aiModelName = '';
+	let aiStatus: "checking" | "connected" | "disconnected" = "checking";
+	let aiModelName = "";
 
 	// OpenAI API 연결 테스트 상태
 	let isTestingConnection = false;
-	let connectionStatus: 'idle' | 'success' | 'error' = 'idle';
-	let connectionMessage = '';
+	let connectionStatus: "idle" | "success" | "error" = "idle";
+	let connectionMessage = "";
 	let connectionDetails: {
 		model?: string;
 		x_request_id?: string;
@@ -71,27 +81,27 @@
 
 	// AI 연결 상태 확인
 	async function checkAIStatus() {
-		aiStatus = 'checking';
+		aiStatus = "checking";
 		try {
-			const response = await fetch('/api/test-connection');
+			const response = await fetch("/api/test-connection");
 			const result = await response.json();
 			if (result.ok) {
-				aiStatus = 'connected';
-				aiModelName = result.configured_model || 'Unknown';
+				aiStatus = "connected";
+				aiModelName = result.configured_model || "Unknown";
 			} else {
-				aiStatus = 'disconnected';
-				aiModelName = '';
+				aiStatus = "disconnected";
+				aiModelName = "";
 			}
 		} catch {
-			aiStatus = 'disconnected';
-			aiModelName = '';
+			aiStatus = "disconnected";
+			aiModelName = "";
 		}
 	}
 
 	// Resend API 연결 테스트 상태
 	let isTestingResend = false;
-	let resendStatus: 'idle' | 'success' | 'error' = 'idle';
-	let resendMessage = '';
+	let resendStatus: "idle" | "success" | "error" = "idle";
+	let resendMessage = "";
 	let resendDetails: {
 		sender_email?: string;
 		recipient_email?: string;
@@ -107,29 +117,29 @@
 	// OpenAI API 연결 테스트
 	async function testConnection() {
 		isTestingConnection = true;
-		connectionStatus = 'idle';
-		connectionMessage = '';
+		connectionStatus = "idle";
+		connectionMessage = "";
 		connectionDetails = null;
 
 		try {
-			const response = await fetch('/api/test-connection');
+			const response = await fetch("/api/test-connection");
 			const result = await response.json();
 
 			if (result.ok) {
-				connectionStatus = 'success';
+				connectionStatus = "success";
 				connectionMessage = `✅ ${result.message}`;
 				connectionDetails = {
 					model: result.configured_model,
 					x_request_id: result.x_request_id,
-					processing_ms: result.processing_ms
+					processing_ms: result.processing_ms,
 				};
-		} else {
-				connectionStatus = 'error';
+			} else {
+				connectionStatus = "error";
 				connectionMessage = `❌ ${result.message}`;
 			}
 		} catch (e) {
-			connectionStatus = 'error';
-			connectionMessage = `❌ 연결 실패: ${e instanceof Error ? e.message : '네트워크 오류'}`;
+			connectionStatus = "error";
+			connectionMessage = `❌ 연결 실패: ${e instanceof Error ? e.message : "네트워크 오류"}`;
 		} finally {
 			isTestingConnection = false;
 		}
@@ -138,59 +148,67 @@
 	// Resend API 연결 테스트
 	async function testResend(sendTestEmail = false) {
 		isTestingResend = true;
-		resendStatus = 'idle';
-		resendMessage = '';
+		resendStatus = "idle";
+		resendMessage = "";
 		resendDetails = null;
 
 		try {
-			const url = sendTestEmail ? '/api/test-resend?send=true' : '/api/test-resend';
+			const url = sendTestEmail
+				? "/api/test-resend?send=true"
+				: "/api/test-resend";
 			const response = await fetch(url);
 			const result = await response.json();
 
 			if (result.ok) {
-				resendStatus = 'success';
+				resendStatus = "success";
 				resendMessage = `✅ ${result.message}`;
 				resendDetails = {
 					sender_email: result.config?.sender_email,
 					recipient_email: result.config?.recipient_email,
 					domains: result.domains,
 					api_key_prefix: result.config?.api_key_prefix,
-					email_test: result.email_test
+					email_test: result.email_test,
 				};
 			} else {
-				resendStatus = 'error';
+				resendStatus = "error";
 				resendMessage = `❌ ${result.message}`;
 				if (result.details) {
 					resendDetails = { ...result.details };
 				}
 			}
 		} catch (e) {
-			resendStatus = 'error';
-			resendMessage = `❌ 연결 실패: ${e instanceof Error ? e.message : '네트워크 오류'}`;
+			resendStatus = "error";
+			resendMessage = `❌ 연결 실패: ${e instanceof Error ? e.message : "네트워크 오류"}`;
 		} finally {
 			isTestingResend = false;
 		}
 	}
 
 	// 파일 데이터 저장 (메모리 복사본)
-	let cachedFileData: { buffer: ArrayBuffer; name: string; size: number; type: string } | null = null;
+	let cachedFileData: {
+		buffer: ArrayBuffer;
+		name: string;
+		size: number;
+		type: string;
+	} | null = null;
 
 	// 파일을 즉시 ArrayBuffer로 읽기 (동기적으로 시작)
 	function readFileImmediately(file: File): void {
-		errorMessage = '';
+		errorMessage = "";
 		successResult = null;
 		selectedFile = file;
 		shrinkResult = null;
 		isLoadingImage = true;
 		cachedFileData = null;
-		
+
 		// 이전 로그 클리어
 		clearLoadLogs();
 
 		// 이미지 타입 체크
 		const typeCheck = isSupportedImageType(file);
 		if (!typeCheck.supported) {
-			errorMessage = typeCheck.message || '지원하지 않는 파일 형식입니다.';
+			errorMessage =
+				typeCheck.message || "지원하지 않는 파일 형식입니다.";
 			selectedFile = null;
 			isLoadingImage = false;
 			imageLoadLogs = getLoadLogs();
@@ -199,20 +217,24 @@
 
 		// ⭐ 핵심: 이벤트 핸들러 내에서 즉시 동기적으로 FileReader 시작
 		const reader = new FileReader();
-		
+
 		reader.onload = () => {
 			if (reader.result instanceof ArrayBuffer) {
 				cachedFileData = {
 					buffer: reader.result,
 					name: file.name,
 					size: file.size,
-					type: file.type || 'image/jpeg'
+					type: file.type || "image/jpeg",
 				};
-				console.log('[FileRead] 파일 메모리 복사 완료:', cachedFileData.size, 'bytes');
+				console.log(
+					"[FileRead] 파일 메모리 복사 완료:",
+					cachedFileData.size,
+					"bytes",
+				);
 				// 메모리 복사 완료 후 이미지 처리 시작
 				processFileFromMemory();
 			} else {
-				errorMessage = '파일을 읽을 수 없습니다.';
+				errorMessage = "파일을 읽을 수 없습니다.";
 				selectedFile = null;
 				isLoadingImage = false;
 				imageLoadLogs = getLoadLogs();
@@ -220,22 +242,22 @@
 		};
 
 		reader.onerror = () => {
-			console.error('[FileRead] 파일 읽기 실패:', reader.error);
-			errorMessage = `파일을 읽을 수 없습니다: ${reader.error?.message || '권한 문제'}`;
+			console.error("[FileRead] 파일 읽기 실패:", reader.error);
+			errorMessage = `파일을 읽을 수 없습니다: ${reader.error?.message || "권한 문제"}`;
 			selectedFile = null;
 			isLoadingImage = false;
 			imageLoadLogs = getLoadLogs();
 		};
 
 		// 즉시 읽기 시작 (이벤트 핸들러 컨텍스트 내)
-		console.log('[FileRead] 파일 읽기 시작:', file.name, file.size);
+		console.log("[FileRead] 파일 읽기 시작:", file.name, file.size);
 		reader.readAsArrayBuffer(file);
 	}
 
 	// 메모리에 복사된 파일 데이터로 이미지 처리
 	async function processFileFromMemory() {
 		if (!cachedFileData) {
-			errorMessage = '파일 데이터가 없습니다.';
+			errorMessage = "파일 데이터가 없습니다.";
 			isLoadingImage = false;
 			return;
 		}
@@ -244,8 +266,11 @@
 			// shrinkImageFromBuffer 사용
 			shrinkResult = await shrinkImageFromBuffer(cachedFileData);
 		} catch (e) {
-			console.error('이미지 처리 오류:', e);
-			errorMessage = e instanceof Error ? e.message : '이미지 처리 중 오류가 발생했습니다. 다른 이미지를 시도해주세요.';
+			console.error("이미지 처리 오류:", e);
+			errorMessage =
+				e instanceof Error
+					? e.message
+					: "이미지 처리 중 오류가 발생했습니다. 다른 이미지를 시도해주세요.";
 			selectedFile = null;
 			shrinkResult = null;
 		} finally {
@@ -306,30 +331,36 @@
 	async function handleSubmit() {
 		if (!selectedFile || !shrinkResult) return;
 
-		// 대상 상품번호 검증
-		const trimmedCode = productCode.trim().replace(/\D/g, '');
-		if (!trimmedCode) {
-			errorMessage = '대상 상품번호를 입력해주세요.';
-			return;
-		}
-
-		if (trimmedCode.length !== 5) {
-			errorMessage = '상품번호는 5자리 숫자여야 합니다.';
-			return;
+		// 대상 상품번호 설정
+		let targetCodes = "";
+		if (searchMode === "manual") {
+			const trimmedCode = productCode.trim().replace(/\D/g, "");
+			if (!trimmedCode) {
+				errorMessage = "대상 상품번호를 입력해주세요.";
+				return;
+			}
+			if (trimmedCode.length !== 5) {
+				errorMessage = "상품번호는 5자리 숫자여야 합니다.";
+				return;
+			}
+			targetCodes = trimmedCode;
+		} else {
+			// 소기업 모드: 고정된 대상 코드
+			targetCodes = "03269,03275";
 		}
 
 		isProcessing = true;
-		errorMessage = '';
+		errorMessage = "";
 		successResult = null;
 
 		try {
 			const formData = new FormData();
-			formData.append('image', shrinkResult.blob, selectedFile.name);
-			formData.append('productCode', trimmedCode);
+			formData.append("image", shrinkResult.blob, selectedFile.name);
+			formData.append("productCode", targetCodes);
 
-			const response = await fetch('/api/process-once', {
-				method: 'POST',
-				body: formData
+			const response = await fetch("/api/process-once", {
+				method: "POST",
+				body: formData,
 			});
 
 			const result = await response.json();
@@ -347,10 +378,10 @@
 				emailed: result.emailed,
 				email_debug: result.email_debug,
 				provider: result.provider,
-				request_id: result.request_id
+				request_id: result.request_id,
 			};
 		} catch (e) {
-			errorMessage = `요청 실패: ${e instanceof Error ? e.message : '네트워크 오류'}`;
+			errorMessage = `요청 실패: ${e instanceof Error ? e.message : "네트워크 오류"}`;
 		} finally {
 			isProcessing = false;
 		}
@@ -360,234 +391,366 @@
 	function reset() {
 		selectedFile = null;
 		shrinkResult = null;
-		productCode = '';
-		errorMessage = '';
+		productCode = "";
+		errorMessage = "";
 		successResult = null;
 	}
 
 	// 상품번호 입력 필터 (숫자만)
 	function handleProductCodeInput(event: Event) {
 		const input = event.target as HTMLInputElement;
-		input.value = input.value.replace(/\D/g, '').slice(0, 5);
+		input.value = input.value.replace(/\D/g, "").slice(0, 5);
 		productCode = input.value;
 	}
 
+	// 모드 상태
+	let searchMode: "manual" | "small-business" = "manual";
+
 	// 제출 버튼 활성화 조건
-	$: canSubmit = selectedFile && shrinkResult && productCode.replace(/\D/g, '').length === 5;
+	$: canSubmit =
+		selectedFile &&
+		shrinkResult &&
+		(searchMode === "small-business" ||
+			(searchMode === "manual" &&
+				productCode.replace(/\D/g, "").length === 5));
 </script>
 
 <svelte:head>
 	<title>사업자등록번호 조회</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+	<link
+		rel="preconnect"
+		href="https://fonts.gstatic.com"
+		crossorigin="anonymous"
+	/>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+		rel="stylesheet"
+	/>
 </svelte:head>
 
 <div class="app">
-<div class="container">
+	<div class="container">
 		<!-- 헤더 -->
-	<header class="header">
+		<header class="header">
 			<div class="logo">
 				<span class="logo-icon">🔍</span>
 				<div class="logo-text">
 					<h1>사업자등록번호 조회</h1>
-					<p class="tagline">상품번호로 사업자등록번호를 자동 조회합니다</p>
+					<p class="tagline">
+						상품번호로 사업자등록번호를 자동 조회합니다
+					</p>
+				</div>
 			</div>
-		</div>
-		<!-- AI 연결 상태 표시 -->
-		<div class="ai-status" class:connected={aiStatus === 'connected'} class:disconnected={aiStatus === 'disconnected'} class:checking={aiStatus === 'checking'}>
-			{#if aiStatus === 'checking'}
-				<span class="status-indicator checking"></span>
-				<span class="status-text">AI 연결 확인 중...</span>
-			{:else if aiStatus === 'connected'}
-				<span class="status-indicator connected"></span>
-				<span class="status-text">AI 연결됨</span>
-				<span class="model-name">{aiModelName}</span>
-			{:else}
-				<span class="status-indicator disconnected"></span>
-				<span class="status-text">AI 연결 안됨</span>
-				<button class="retry-btn" onclick={checkAIStatus}>재시도</button>
-			{/if}
-		</div>
-	</header>
+			<!-- AI 연결 상태 표시 -->
+			<div
+				class="ai-status"
+				class:connected={aiStatus === "connected"}
+				class:disconnected={aiStatus === "disconnected"}
+				class:checking={aiStatus === "checking"}
+			>
+				{#if aiStatus === "checking"}
+					<span class="status-indicator checking"></span>
+					<span class="status-text">AI 연결 확인 중...</span>
+				{:else if aiStatus === "connected"}
+					<span class="status-indicator connected"></span>
+					<span class="status-text">AI 연결됨</span>
+					<span class="model-name">{aiModelName}</span>
+				{:else}
+					<span class="status-indicator disconnected"></span>
+					<span class="status-text">AI 연결 안됨</span>
+					<button class="retry-btn" onclick={checkAIStatus}
+						>재시도</button
+					>
+				{/if}
+			</div>
+		</header>
 
 		<!-- 디버깅 패널 토글 -->
 		<div class="debug-toggle">
-			<button class="debug-toggle-btn" onclick={() => showDebugPanel = !showDebugPanel}>
-				🛠️ {showDebugPanel ? '디버깅 패널 숨기기' : '디버깅 패널 열기'}
+			<button
+				class="debug-toggle-btn"
+				onclick={() => (showDebugPanel = !showDebugPanel)}
+			>
+				🛠️ {showDebugPanel ? "디버깅 패널 숨기기" : "디버깅 패널 열기"}
 			</button>
-			</div>
-			
-		{#if showDebugPanel}
-		<!-- API 연결 테스트 섹션 -->
-		<section class="connection-section">
-			<div class="connection-header">
-				<span class="connection-title">🔌 OpenAI API 연결 상태</span>
-				<button
-					class="test-btn"
-					onclick={testConnection}
-					disabled={isTestingConnection}
-				>
-					{#if isTestingConnection}
-						<span class="spinner-small"></span>
-						테스트 중...
-				{:else}
-						연결 테스트
-					{/if}
-					</button>
-			</div>
-
-			{#if connectionStatus !== 'idle'}
-				<div class="connection-result" class:success={connectionStatus === 'success'} class:error={connectionStatus === 'error'}>
-					<p class="connection-message">{connectionMessage}</p>
-					{#if connectionDetails}
-						<div class="connection-details">
-							<span>모델: <code>{connectionDetails.model}</code></span>
-							{#if connectionDetails.processing_ms}
-								<span>응답시간: <code>{connectionDetails.processing_ms}ms</code></span>
-				{/if}
-			</div>
-					{/if}
 		</div>
-		{/if}
-		</section>
 
-		<!-- Resend API 연결 테스트 섹션 -->
-		<section class="connection-section resend-section">
-			<div class="connection-header">
-				<span class="connection-title">📧 Resend API 연결 상태</span>
-				<div class="test-btn-group">
+		{#if showDebugPanel}
+			<!-- API 연결 테스트 섹션 -->
+			<section class="connection-section">
+				<div class="connection-header">
+					<span class="connection-title">🔌 OpenAI API 연결 상태</span
+					>
 					<button
 						class="test-btn"
-						onclick={() => testResend(false)}
-						disabled={isTestingResend}
+						onclick={testConnection}
+						disabled={isTestingConnection}
 					>
-						{#if isTestingResend}
+						{#if isTestingConnection}
 							<span class="spinner-small"></span>
 							테스트 중...
 						{:else}
 							연결 테스트
 						{/if}
 					</button>
-					<button
-						class="test-btn test-btn-secondary"
-						onclick={() => testResend(true)}
-						disabled={isTestingResend}
-						title="실제 테스트 이메일을 발송합니다"
+				</div>
+
+				{#if connectionStatus !== "idle"}
+					<div
+						class="connection-result"
+						class:success={connectionStatus === "success"}
+						class:error={connectionStatus === "error"}
 					>
-						📤 테스트 이메일 발송
+						<p class="connection-message">{connectionMessage}</p>
+						{#if connectionDetails}
+							<div class="connection-details">
+								<span
+									>모델: <code>{connectionDetails.model}</code
+									></span
+								>
+								{#if connectionDetails.processing_ms}
+									<span
+										>응답시간: <code
+											>{connectionDetails.processing_ms}ms</code
+										></span
+									>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</section>
+
+			<!-- Resend API 연결 테스트 섹션 -->
+			<section class="connection-section resend-section">
+				<div class="connection-header">
+					<span class="connection-title">📧 Resend API 연결 상태</span
+					>
+					<div class="test-btn-group">
+						<button
+							class="test-btn"
+							onclick={() => testResend(false)}
+							disabled={isTestingResend}
+						>
+							{#if isTestingResend}
+								<span class="spinner-small"></span>
+								테스트 중...
+							{:else}
+								연결 테스트
+							{/if}
+						</button>
+						<button
+							class="test-btn test-btn-secondary"
+							onclick={() => testResend(true)}
+							disabled={isTestingResend}
+							title="실제 테스트 이메일을 발송합니다"
+						>
+							📤 테스트 이메일 발송
+						</button>
+					</div>
+				</div>
+
+				{#if resendStatus !== "idle"}
+					<div
+						class="connection-result"
+						class:success={resendStatus === "success"}
+						class:error={resendStatus === "error"}
+					>
+						<p class="connection-message">{resendMessage}</p>
+						{#if resendDetails}
+							<div class="resend-details">
+								{#if resendDetails.sender_email}
+									<div class="detail-row">
+										<span class="detail-label">발신자:</span
+										>
+										<code>{resendDetails.sender_email}</code
+										>
+									</div>
+								{/if}
+								{#if resendDetails.recipient_email}
+									<div class="detail-row">
+										<span class="detail-label">수신자:</span
+										>
+										<code
+											>{resendDetails.recipient_email}</code
+										>
+									</div>
+								{/if}
+								{#if resendDetails.api_key_prefix}
+									<div class="detail-row">
+										<span class="detail-label"
+											>API Key:</span
+										>
+										<code
+											>{resendDetails.api_key_prefix}</code
+										>
+									</div>
+								{/if}
+								{#if resendDetails.domains && resendDetails.domains.length > 0}
+									<div class="detail-row">
+										<span class="detail-label">도메인:</span
+										>
+										<div class="domain-list">
+											{#each resendDetails.domains as domain}
+												<span
+													class="domain-badge"
+													class:verified={domain.status ===
+														"verified"}
+												>
+													{domain.name} ({domain.status})
+												</span>
+											{/each}
+										</div>
+									</div>
+								{/if}
+								{#if resendDetails.email_test}
+									<div
+										class="detail-row email-test-result"
+										class:success={resendDetails.email_test
+											.success}
+										class:error={!resendDetails.email_test
+											.success}
+									>
+										<span class="detail-label"
+											>테스트 이메일:</span
+										>
+										{#if resendDetails.email_test.success}
+											<span class="test-success"
+												>✅ 발송 성공 (ID: {resendDetails
+													.email_test
+													.message_id})</span
+											>
+										{:else}
+											<span class="test-error"
+												>❌ 발송 실패: {resendDetails
+													.email_test.error}</span
+											>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</section>
+
+			<!-- 이미지 로딩 디버그 로그 -->
+			<section class="connection-section image-log-section">
+				<div class="connection-header">
+					<span class="connection-title">🖼️ 이미지 로딩 로그</span>
+					<button
+						class="test-btn"
+						onclick={() => {
+							clearLoadLogs();
+							imageLoadLogs = [];
+						}}
+					>
+						로그 삭제
 					</button>
-					</div>
-					</div>
+				</div>
 
-			{#if resendStatus !== 'idle'}
-				<div class="connection-result" class:success={resendStatus === 'success'} class:error={resendStatus === 'error'}>
-					<p class="connection-message">{resendMessage}</p>
-					{#if resendDetails}
-						<div class="resend-details">
-							{#if resendDetails.sender_email}
-								<div class="detail-row">
-									<span class="detail-label">발신자:</span>
-									<code>{resendDetails.sender_email}</code>
-				</div>
-							{/if}
-							{#if resendDetails.recipient_email}
-								<div class="detail-row">
-									<span class="detail-label">수신자:</span>
-									<code>{resendDetails.recipient_email}</code>
-						</div>
-							{/if}
-							{#if resendDetails.api_key_prefix}
-								<div class="detail-row">
-									<span class="detail-label">API Key:</span>
-									<code>{resendDetails.api_key_prefix}</code>
-					</div>
-							{/if}
-							{#if resendDetails.domains && resendDetails.domains.length > 0}
-								<div class="detail-row">
-									<span class="detail-label">도메인:</span>
-									<div class="domain-list">
-										{#each resendDetails.domains as domain}
-											<span class="domain-badge" class:verified={domain.status === 'verified'}>
-												{domain.name} ({domain.status})
-											</span>
-										{/each}
-					</div>
-				</div>
-							{/if}
-							{#if resendDetails.email_test}
-								<div class="detail-row email-test-result" class:success={resendDetails.email_test.success} class:error={!resendDetails.email_test.success}>
-									<span class="detail-label">테스트 이메일:</span>
-									{#if resendDetails.email_test.success}
-										<span class="test-success">✅ 발송 성공 (ID: {resendDetails.email_test.message_id})</span>
-									{:else}
-										<span class="test-error">❌ 발송 실패: {resendDetails.email_test.error}</span>
-									{/if}
-				</div>
-							{/if}
-			</div>
-					{/if}
-				</div>
-			{/if}
-		</section>
-
-		<!-- 이미지 로딩 디버그 로그 -->
-		<section class="connection-section image-log-section">
-			<div class="connection-header">
-				<span class="connection-title">🖼️ 이미지 로딩 로그</span>
-				<button class="test-btn" onclick={() => { clearLoadLogs(); imageLoadLogs = []; }}>
-					로그 삭제
-				</button>
-			</div>
-			
-			{#if imageLoadLogs.length > 0}
-				<div class="image-log-list">
-					{#each imageLoadLogs as log, index}
-						<div class="log-entry" class:success={log.success} class:error={!log.success}>
-							<div class="log-header">
-								<span class="log-method">{log.method}</span>
-								<span class="log-status">{log.success ? '✅ 성공' : '❌ 실패'}</span>
-								<span class="log-duration">{log.duration}ms</span>
+				{#if imageLoadLogs.length > 0}
+					<div class="image-log-list">
+						{#each imageLoadLogs as log, index}
+							<div
+								class="log-entry"
+								class:success={log.success}
+								class:error={!log.success}
+							>
+								<div class="log-header">
+									<span class="log-method">{log.method}</span>
+									<span class="log-status"
+										>{log.success
+											? "✅ 성공"
+											: "❌ 실패"}</span
+									>
+									<span class="log-duration"
+										>{log.duration}ms</span
+									>
+								</div>
+								<div class="log-details">
+									<span>파일: {log.fileInfo.name}</span>
+									<span
+										>크기: {formatBytes(
+											log.fileInfo.size,
+										)}</span
+									>
+									<span
+										>타입: {log.fileInfo.type ||
+											"알 수 없음"}</span
+									>
+								</div>
+								{#if log.error}
+									<div class="log-error">{log.error}</div>
+								{/if}
 							</div>
-							<div class="log-details">
-								<span>파일: {log.fileInfo.name}</span>
-								<span>크기: {formatBytes(log.fileInfo.size)}</span>
-								<span>타입: {log.fileInfo.type || '알 수 없음'}</span>
-							</div>
-							{#if log.error}
-								<div class="log-error">{log.error}</div>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{:else}
-				<p class="no-logs">이미지 로딩 로그가 없습니다. 이미지를 선택하면 로그가 표시됩니다.</p>
-			{/if}
-		</section>
+						{/each}
+					</div>
+				{:else}
+					<p class="no-logs">
+						이미지 로딩 로그가 없습니다. 이미지를 선택하면 로그가
+						표시됩니다.
+					</p>
+				{/if}
+			</section>
 		{/if}
 
 		<!-- 메인 컨텐츠 -->
 		<main class="main">
 			{#if !successResult}
-				<!-- 대상 상품번호 입력 -->
-				<div class="product-code-section">
-					<label for="product-code" class="input-label">
-						🏷️ 상품번호
-						<span class="required">*</span>
-					</label>
-						<input 
-						id="product-code"
-						type="text"
-						value={productCode}
-						oninput={handleProductCodeInput}
-						placeholder="5자리 숫자 입력 (예: 12345)"
-						class="product-code-input"
-						maxlength="5"
-						inputmode="numeric"
-						pattern="[0-9]*"
-					/>
-					<p class="input-hint">이미지에서 이 상품번호와 같은 행의 사업자등록번호를 추출합니다.</p>
+				<!-- 검색 모드 선택 -->
+				<div class="search-mode-tabs">
+					<button
+						class="mode-btn"
+						class:active={searchMode === "manual"}
+						onclick={() => (searchMode = "manual")}
+					>
+						📝 직접 입력
+					</button>
+					<button
+						class="mode-btn"
+						class:active={searchMode === "small-business"}
+						onclick={() => (searchMode = "small-business")}
+					>
+						🏢 소기업 상품조회
+					</button>
 				</div>
+
+				<!-- 대상 상품번호 입력 (직접 입력 모드일 때만 표시) -->
+				{#if searchMode === "manual"}
+					<div class="product-code-section">
+						<label for="product-code" class="input-label">
+							🏷️ 상품번호
+							<span class="required">*</span>
+						</label>
+						<input
+							id="product-code"
+							type="text"
+							bind:value={productCode}
+							oninput={handleProductCodeInput}
+							placeholder="5자리 숫자 입력 (예: 12345)"
+							class="product-code-input"
+							maxlength="5"
+							inputmode="numeric"
+							pattern="[0-9]*"
+						/>
+						<p class="input-hint">
+							이미지에서 이 상품번호와 같은 행의 사업자등록번호를
+							추출합니다.
+						</p>
+					</div>
+				{:else}
+					<div class="product-code-section">
+						<div class="small-business-info">
+							<span class="info-icon">ℹ️</span>
+							<p>
+								소기업 상품코드 <strong>03269</strong> 또는
+								<strong>03275</strong>를 자동으로 찾습니다.
+							</p>
+						</div>
+					</div>
+				{/if}
 
 				<!-- 숨겨진 파일/카메라 입력 -->
 				<!-- 갤러리용: accept="image/*"만 사용하면 안드로이드에서 바로 갤러리 열림 -->
@@ -610,10 +773,20 @@
 
 				<!-- 이미지 선택 버튼들 -->
 				<div class="image-select-buttons">
-					<button type="button" class="image-btn gallery-btn" onclick={openFileSelector} disabled={isLoadingImage}>
+					<button
+						type="button"
+						class="image-btn gallery-btn"
+						onclick={openFileSelector}
+						disabled={isLoadingImage}
+					>
 						🖼️ 갤러리에서 선택
 					</button>
-					<button type="button" class="image-btn camera-btn" onclick={openCamera} disabled={isLoadingImage}>
+					<button
+						type="button"
+						class="image-btn camera-btn"
+						onclick={openCamera}
+						disabled={isLoadingImage}
+					>
 						📸 카메라로 촬영
 					</button>
 				</div>
@@ -629,19 +802,25 @@
 					ondragleave={handleDragLeave}
 					ondrop={handleDrop}
 					onclick={openFileSelector}
-					onkeydown={(e) => e.key === 'Enter' && openFileSelector()}
+					onkeydown={(e) => e.key === "Enter" && openFileSelector()}
 				>
 					{#if isLoadingImage}
 						<div class="upload-loading">
 							<div class="loading-spinner"></div>
 							<p class="loading-text">이미지 처리 중...</p>
-							<p class="loading-hint">모바일에서는 시간이 걸릴 수 있습니다</p>
+							<p class="loading-hint">
+								모바일에서는 시간이 걸릴 수 있습니다
+							</p>
 						</div>
 					{:else if !selectedFile}
 						<div class="upload-placeholder">
 							<div class="upload-icon">📷</div>
-							<p class="upload-title">이미지를 드래그하거나 클릭하여 업로드</p>
-							<p class="upload-hint">상품번호와 사업자등록번호가 포함된 이미지</p>
+							<p class="upload-title">
+								이미지를 드래그하거나 클릭하여 업로드
+							</p>
+							<p class="upload-hint">
+								상품번호와 사업자등록번호가 포함된 이미지
+							</p>
 						</div>
 					{:else if shrinkResult}
 						<div class="preview-container">
@@ -650,10 +829,16 @@
 								alt="Preview"
 								class="preview-image"
 							/>
-							<button class="change-btn" onclick={(e) => { e.stopPropagation(); reset(); }}>
+							<button
+								class="change-btn"
+								onclick={(e) => {
+									e.stopPropagation();
+									reset();
+								}}
+							>
 								변경
 							</button>
-					</div>
+						</div>
 					{/if}
 				</div>
 
@@ -664,30 +849,40 @@
 						<div class="info-grid">
 							<div class="info-item">
 								<span class="info-label">원본 크기</span>
-								<span class="info-value">{formatBytes(shrinkResult.originalSize)}</span>
-					</div>
+								<span class="info-value"
+									>{formatBytes(
+										shrinkResult.originalSize,
+									)}</span
+								>
+							</div>
 							<div class="info-item">
 								<span class="info-label">최종 크기</span>
-								<span class="info-value highlight">{formatBytes(shrinkResult.finalSize)}</span>
-				</div>
+								<span class="info-value highlight"
+									>{formatBytes(shrinkResult.finalSize)}</span
+								>
+							</div>
 							<div class="info-item">
 								<span class="info-label">원본 해상도</span>
-								<span class="info-value">{shrinkResult.originalWidth} × {shrinkResult.originalHeight}</span>
+								<span class="info-value"
+									>{shrinkResult.originalWidth} × {shrinkResult.originalHeight}</span
+								>
 							</div>
 							<div class="info-item">
 								<span class="info-label">최종 해상도</span>
-								<span class="info-value">{shrinkResult.finalWidth} × {shrinkResult.finalHeight}</span>
+								<span class="info-value"
+									>{shrinkResult.finalWidth} × {shrinkResult.finalHeight}</span
+								>
 							</div>
 						</div>
-			</div>
-		{/if}
+					</div>
+				{/if}
 
 				<!-- 에러 메시지 -->
 				{#if errorMessage}
 					<div class="error-box">
 						<span class="error-icon">⚠️</span>
 						<span class="error-text">{errorMessage}</span>
-			</div>
+					</div>
 				{/if}
 
 				<!-- 제출 버튼 -->
@@ -714,19 +909,27 @@
 					<div class="success-header">
 						<span class="success-icon">✅</span>
 						<h2>조회 완료</h2>
-						<span class="found-badge">{successResult.total_found}건 발견</span>
-						</div>
+						<span class="found-badge"
+							>{successResult.total_found}건 발견</span
+						>
+					</div>
 
 					<!-- 검색 요약 -->
 					<div class="search-summary">
 						<div class="summary-item">
 							<span class="summary-label">검색 상품번호</span>
-							<span class="summary-value code">{successResult.product_code}</span>
+							<span class="summary-value code"
+								>{successResult.product_code}</span
+							>
 						</div>
 						<div class="summary-item">
 							<span class="summary-label">신뢰도</span>
-							<span class="summary-value confidence">{(successResult.confidence * 100).toFixed(1)}%</span>
-					</div>
+							<span class="summary-value confidence"
+								>{(successResult.confidence * 100).toFixed(
+									1,
+								)}%</span
+							>
+						</div>
 					</div>
 
 					<!-- 결과 테이블 (다중 결과) -->
@@ -744,9 +947,15 @@
 								{#each successResult.items as item, index}
 									<tr>
 										<td class="col-num">{index + 1}</td>
-										<td class="col-code">{item.product_code}</td>
-										<td class="col-company">{item.company_name || '-'}</td>
-										<td class="col-business">{item.business_reg_no}</td>
+										<td class="col-code"
+											>{item.product_code}</td
+										>
+										<td class="col-company"
+											>{item.company_name || "-"}</td
+										>
+										<td class="col-business"
+											>{item.business_reg_no}</td
+										>
 									</tr>
 								{/each}
 							</tbody>
@@ -757,71 +966,117 @@
 					<div class="result-meta">
 						<div class="meta-item">
 							<span class="meta-label">이메일 발송</span>
-							<span class="meta-value" class:success={successResult.emailed} class:fail={!successResult.emailed}>
-								{successResult.emailed ? '✓ 성공' : '✗ 실패'}
-								</span>
-							</div>
+							<span
+								class="meta-value"
+								class:success={successResult.emailed}
+								class:fail={!successResult.emailed}
+							>
+								{successResult.emailed ? "✓ 성공" : "✗ 실패"}
+							</span>
+						</div>
 						<div class="meta-item">
 							<span class="meta-label">처리 엔진</span>
-							<span class="meta-value provider">{successResult.provider.toUpperCase()}</span>
+							<span class="meta-value provider"
+								>{successResult.provider.toUpperCase()}</span
+							>
 						</div>
 					</div>
 
 					{#if successResult.emailed}
 						<div class="email-sent-notice">
-							📧 결과가 <strong>{successResult.email_debug?.recipient_email || '수신자'}</strong>로 발송되었습니다.
+							📧 결과가 <strong
+								>{successResult.email_debug?.recipient_email ||
+									"수신자"}</strong
+							>로 발송되었습니다.
 						</div>
 					{:else}
 						<div class="email-failed-notice">
-							⚠️ 이메일 발송에 실패했습니다. (상세 정보는 아래 참조)
-					</div>
-				{/if}
+							⚠️ 이메일 발송에 실패했습니다. (상세 정보는 아래
+							참조)
+						</div>
+					{/if}
 
 					<!-- 이메일 디버깅 정보 -->
 					{#if successResult.email_debug}
 						<details class="email-debug-details">
 							<summary class="email-debug-summary">
-								📋 이메일 발송 상세 정보 {successResult.email_debug.success ? '✅' : '❌'}
+								📋 이메일 발송 상세 정보 {successResult
+									.email_debug.success
+									? "✅"
+									: "❌"}
 							</summary>
 							<div class="email-debug-content">
 								<div class="debug-row">
 									<span class="debug-label">발신자:</span>
-									<code>{successResult.email_debug.sender_email || 'N/A'}</code>
-						</div>
+									<code
+										>{successResult.email_debug
+											.sender_email || "N/A"}</code
+									>
+								</div>
 								<div class="debug-row">
 									<span class="debug-label">수신자:</span>
-									<code>{successResult.email_debug.recipient_email || 'N/A'}</code>
+									<code
+										>{successResult.email_debug
+											.recipient_email || "N/A"}</code
+									>
 								</div>
 								<div class="debug-row">
 									<span class="debug-label">발송 시도:</span>
-									<span>{successResult.email_debug.attempted ? '예' : '아니오'}</span>
+									<span
+										>{successResult.email_debug.attempted
+											? "예"
+											: "아니오"}</span
+									>
 								</div>
 								<div class="debug-row">
 									<span class="debug-label">발송 성공:</span>
-									<span class:success-text={successResult.email_debug.success} class:error-text={!successResult.email_debug.success}>
-										{successResult.email_debug.success ? '✅ 성공' : '❌ 실패'}
+									<span
+										class:success-text={successResult
+											.email_debug.success}
+										class:error-text={!successResult
+											.email_debug.success}
+									>
+										{successResult.email_debug.success
+											? "✅ 성공"
+											: "❌ 실패"}
 									</span>
 								</div>
 								{#if successResult.email_debug.message_id}
 									<div class="debug-row">
-										<span class="debug-label">Message ID:</span>
-										<code>{successResult.email_debug.message_id}</code>
-					</div>
-				{/if}
+										<span class="debug-label"
+											>Message ID:</span
+										>
+										<code
+											>{successResult.email_debug
+												.message_id}</code
+										>
+									</div>
+								{/if}
 								{#if successResult.email_debug.error}
 									<div class="debug-row error-row">
 										<span class="debug-label">오류:</span>
-										<span class="error-text">{successResult.email_debug.error}</span>
+										<span class="error-text"
+											>{successResult.email_debug
+												.error}</span
+										>
 									</div>
-			{/if}
+								{/if}
 								{#if successResult.email_debug.error_details}
 									<div class="debug-row error-row">
-										<span class="debug-label">오류 상세:</span>
-										<pre class="error-details-pre">{JSON.stringify(successResult.email_debug.error_details, null, 2)}</pre>
-		</div>
+										<span class="debug-label"
+											>오류 상세:</span
+										>
+										<pre
+											class="error-details-pre">{JSON.stringify(
+												successResult.email_debug
+													.error_details,
+												null,
+												2,
+											)}</pre>
+									</div>
 								{/if}
 							</div>
-		</details>
+						</details>
 					{/if}
 
 					<div class="request-id">
@@ -830,16 +1085,19 @@
 
 					<button class="reset-btn" onclick={reset}>
 						🔄 새로운 조회
-	</button>
-			</div>
-				{/if}
+					</button>
+				</div>
+			{/if}
 		</main>
 
 		<!-- 푸터 -->
 		<footer class="footer">
-			<p>💡 이미지에서 입력한 상품번호(5자리)를 찾아 같은 행의 사업자등록번호(000-00-00000)를 추출합니다.</p>
+			<p>
+				💡 이미지에서 입력한 상품번호(5자리)를 찾아 같은 행의
+				사업자등록번호(000-00-00000)를 추출합니다.
+			</p>
 		</footer>
-			</div>
+	</div>
 </div>
 
 <style>
@@ -850,8 +1108,17 @@
 	}
 
 	:global(body) {
-		font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-		background: linear-gradient(145deg, #0c0c0c 0%, #1a1a2e 50%, #0f0f1a 100%);
+		font-family:
+			"Noto Sans KR",
+			-apple-system,
+			BlinkMacSystemFont,
+			sans-serif;
+		background: linear-gradient(
+			145deg,
+			#0c0c0c 0%,
+			#1a1a2e 50%,
+			#0f0f1a 100%
+		);
 		min-height: 100vh;
 		color: #e4e4e7;
 	}
@@ -900,6 +1167,70 @@
 		font-size: 0.9rem;
 		color: #71717a;
 		margin-top: 0.25rem;
+	}
+
+	.input-hint {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		margin-top: 0.5rem;
+	}
+
+	/* 검색 모드 탭 스타일 */
+	.search-mode-tabs {
+		display: flex;
+		background-color: var(--bg-tertiary);
+		border-radius: var(--radius-md);
+		padding: 0.25rem;
+		margin-bottom: 1.5rem;
+		gap: 0.25rem;
+	}
+
+	.mode-btn {
+		flex: 1;
+		padding: 0.75rem;
+		border: none;
+		background: none;
+		border-radius: var(--radius-sm);
+		font-family: var(--font-main);
+		font-size: 0.95rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.mode-btn.active {
+		background-color: var(--bg-primary);
+		color: var(--primary);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		font-weight: 600;
+	}
+
+	.small-business-info {
+		background-color: var(--bg-secondary);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius-md);
+		padding: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.info-icon {
+		font-size: 1.25rem;
+	}
+
+	.small-business-info p {
+		margin: 0;
+		color: var(--text-primary);
+		font-size: 0.95rem;
+		line-height: 1.5;
+	}
+
+	.small-business-info strong {
+		color: var(--primary);
+		font-weight: 600;
 	}
 
 	/* AI 연결 상태 표시 */
@@ -958,8 +1289,13 @@
 	}
 
 	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.5; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 
 	.status-text {
@@ -967,7 +1303,7 @@
 	}
 
 	.model-name {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		font-size: 0.8rem;
 		padding: 0.2rem 0.5rem;
 		background: rgba(34, 197, 94, 0.2);
@@ -1085,7 +1421,7 @@
 	}
 
 	.connection-details code {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		background: rgba(0, 0, 0, 0.3);
 		padding: 0.15rem 0.4rem;
 		border-radius: 4px;
@@ -1138,7 +1474,7 @@
 	}
 
 	.log-duration {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		color: #a1a1aa;
 		font-size: 0.75rem;
 	}
@@ -1252,7 +1588,7 @@
 		border: 2px solid rgba(99, 102, 241, 0.3);
 		border-radius: 12px;
 		font-size: 1.5rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		color: #e4e4e7;
 		transition: all 0.2s;
 		letter-spacing: 0.2em;
@@ -1268,7 +1604,7 @@
 
 	.product-code-input::placeholder {
 		color: #52525b;
-		font-family: 'Noto Sans KR', sans-serif;
+		font-family: "Noto Sans KR", sans-serif;
 		letter-spacing: normal;
 		font-size: 1rem;
 	}
@@ -1423,7 +1759,7 @@
 	}
 
 	.info-value {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		font-size: 0.95rem;
 		color: #d4d4d8;
 	}
@@ -1529,7 +1865,9 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	/* 성공 카드 */
@@ -1598,13 +1936,13 @@
 	}
 
 	.summary-value.code {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		color: #818cf8;
 		font-size: 1.25rem;
 	}
 
 	.summary-value.confidence {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		color: #34d399;
 	}
 
@@ -1663,7 +2001,7 @@
 
 	.results-table .col-code {
 		width: 90px;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		color: #818cf8;
 	}
 
@@ -1673,7 +2011,7 @@
 
 	.results-table .col-business {
 		width: 140px;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		color: #34d399;
 		font-weight: 600;
 		font-size: 1.05rem;
@@ -1716,7 +2054,7 @@
 	}
 
 	.meta-value.provider {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		color: #a78bfa;
 	}
 
@@ -1727,7 +2065,7 @@
 	}
 
 	.request-id code {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		background: rgba(39, 39, 42, 0.8);
 		padding: 0.25rem 0.5rem;
 		border-radius: 4px;
@@ -1826,7 +2164,7 @@
 	}
 
 	.detail-row code {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		background: rgba(0, 0, 0, 0.3);
 		padding: 0.15rem 0.4rem;
 		border-radius: 4px;
@@ -1921,7 +2259,7 @@
 	}
 
 	.debug-row code {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		background: rgba(0, 0, 0, 0.3);
 		padding: 0.15rem 0.4rem;
 		border-radius: 4px;
@@ -1945,7 +2283,7 @@
 	}
 
 	.error-details-pre {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: "JetBrains Mono", monospace;
 		font-size: 0.75rem;
 		background: rgba(0, 0, 0, 0.3);
 		padding: 0.5rem;
